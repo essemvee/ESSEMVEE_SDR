@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ESSEMVEE AI SDR</title>
+
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+
+            <div class="brand">
+                <div class="brand-mark">E</div>
+
+                <div>
+                    <div class="brand-name">
+                        ESSEMVEE
+                    </div>
+
+                    <div class="brand-subtitle">
+                        AI SDR
+                    </div>
+                </div>
+            </div>
+
+
+            <nav class="navigation">
+
+                <button class="nav-item active">
+                    <span>▦</span>
+                    Dashboard
+                </button>
+
+                <button class="nav-item">
+                    <span>◉</span>
+                    Prospects
+                </button>
+
+                <button class="nav-item">
+                    <span>⚡</span>
+                    Signals
+                </button>
+
+                <button class="nav-item">
+                    <span>♙</span>
+                    Contacts
+                </button>
+
+                <button class="nav-item">
+                    <span>✉</span>
+                    Outreach
+                </button>
+
+                <button class="nav-item">
+                    <span>◈</span>
+                    Evidence
+                </button>
+
+            </nav>
+
+
+            <div class="sidebar-footer">
+
+                <div class="system-status">
+                    <span class="status-dot"></span>
+
+                    <div>
+                        <strong>System Online</strong>
+                        <small>API connected</small>
+                    </div>
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN -->
+        <main class="main">
+
+            <!-- HEADER -->
+            <header class="topbar">
+
+                <div>
+                    <h1>Prospect Intelligence</h1>
+
+                    <p>
+                        Discover, qualify and engage high-value prospects.
+                    </p>
+                </div>
+
+
+                <div class="topbar-actions">
+
+                    <button
+                        class="secondary-button"
+                        id="healthButton"
+                    >
+                        Check API
+                    </button>
+
+                    <button
+                        class="primary-button"
+                        id="discoverButton"
+                    >
+                        + Discover Prospects
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <!-- SEARCH -->
+            <section class="search-panel">
+
+                <div class="search-content">
+
+                    <label for="searchQuery">
+                        Prospect discovery
+                    </label>
+
+                    <div class="search-row">
+
+                        <input
+                            id="searchQuery"
+                            type="text"
+                            value='"Senior DevOps Engineer" "Ireland" -LinkedIn -Indeed -Glassdoor -IrishJobs'
+                            placeholder="Search for prospects..."
+                        >
+
+                        <input
+                            id="searchCount"
+                            type="number"
+                            value="5"
+                            min="1"
+                            max="20"
+                        >
+
+                        <button
+                            class="primary-button"
+                            id="searchButton"
+                        >
+                            Search
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- STATUS -->
+            <div
+                id="statusMessage"
+                class="status-message hidden"
+            ></div>
+
+
+            <!-- KPI CARDS -->
+            <section class="metrics">
+
+                <div class="metric-card">
+
+                    <div class="metric-label">
+                        ICP Score
+                    </div>
+
+                    <div
+                        id="metricIcp"
+                        class="metric-value"
+                    >
+                        —
+                    </div>
+
+                    <div class="metric-description">
+                        Ideal customer fit
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-label">
+                        Intent
+                    </div>
+
+                    <div
+                        id="metricIntent"
+                        class="metric-value"
+                    >
+                        —
+                    </div>
+
+                    <div class="metric-description">
+                        Current buying signal
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-label">
+                        Opportunity
+                    </div>
+
+                    <div
+                        id="metricOpportunity"
+                        class="metric-value"
+                    >
+                        —
+                    </div>
+
+                    <div class="metric-description">
+                        Overall opportunity
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card priority-card">
+
+                    <div class="metric-label">
+                        Priority
+                    </div>
+
+                    <div
+                        id="metricPriority"
+                        class="priority-badge"
+                    >
+                        —
+                    </div>
+
+                    <div class="metric-description">
+                        Sales priority
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- PROSPECT -->
+            <section class="content-grid">
+
+                <!-- COMPANY -->
+                <div class="panel company-panel">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <span class="eyebrow">
+                                COMPANY
+                            </span>
+
+                            <h2 id="companyName">
+                                No prospect selected
+                            </h2>
+
+                            <p id="companyMeta">
+                                Run discovery to begin.
+                            </p>
+
+                        </div>
+
+                        <a
+                            id="companyWebsite"
+                            href="#"
+                            target="_blank"
+                            class="website-link"
+                        >
+                            Website ↗
+                        </a>
+
+                    </div>
+
+
+                    <div class="company-description">
+
+                        <p id="companyDescription">
+                            —
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- SIGNAL -->
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <span class="eyebrow">
+                                SIGNAL
+                            </span>
+
+                            <h2 id="signalTitle">
+                                No signal
+                            </h2>
+
+                        </div>
+
+                        <span
+                            id="signalType"
+                            class="signal-badge"
+                        >
+                            —
+                        </span>
+
+                    </div>
+
+
+                    <div class="signal-body">
+
+                        <p id="signalDescription">
+                            —
+                        </p>
+
+                        <div class="evidence-row">
+
+                            <span>
+                                Source
+                            </span>
+
+                            <a
+                                id="signalSource"
+                                href="#"
+                                target="_blank"
+                            >
+                                —
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- INTELLIGENCE -->
+            <section class="content-grid">
+
+                <!-- CONTACT -->
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <span class="eyebrow">
+                                DECISION MAKER
+                            </span>
+
+                            <h2 id="contactName">
+                                —
+                            </h2>
+
+                            <p id="contactRole">
+                                —
+                            </p>
+
+                        </div>
+
+                        <div
+                            id="contactConfidence"
+                            class="confidence"
+                        >
+                            —
+                        </div>
+
+                    </div>
+
+
+                    <div class="contact-details">
+
+                        <div class="detail-item">
+
+                            <span>
+                                LinkedIn
+                            </span>
+
+                            <a
+                                id="contactLinkedin"
+                                href="#"
+                                target="_blank"
+                            >
+                                Not Found
+                            </a>
+
+                        </div>
+
+
+                        <div class="detail-item">
+
+                            <span>
+                                Email
+                            </span>
+
+                            <span id="contactEmail">
+                                Not Found
+                            </span>
+
+                        </div>
+
+
+                        <div class="detail-item">
+
+                            <span>
+                                Contact Status
+                            </span>
+
+                            <span
+                                id="contactStatus"
+                                class="small-badge"
+                            >
+                                —
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- RECOMMENDATION -->
+                <div class="panel recommendation-panel">
+
+                    <span class="eyebrow">
+                        ESSEMVEE RECOMMENDATION
+                    </span>
+
+                    <h2 id="recommendedService">
+                        —
+                    </h2>
+
+                    <p id="recommendationText">
+                        Analyze a prospect to see the recommended service and sales action.
+                    </p>
+
+                    <button
+                        id="outreachButton"
+                        class="primary-button"
+                    >
+                        View Outreach
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- OUTREACH -->
+            <section
+                id="outreachPanel"
+                class="panel outreach-panel hidden"
+            >
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <span class="eyebrow">
+                            OUTREACH
+                        </span>
+
+                        <h2>
+                            Recommended messaging
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div class="outreach-grid">
+
+                    <div class="outreach-card">
+
+                        <h3>
+                            LinkedIn Connection
+                        </h3>
+
+                        <p id="linkedinConnection">
+                            —
+                        </p>
+
+                    </div>
+
+
+                    <div class="outreach-card">
+
+                        <h3>
+                            Cold Email
+                        </h3>
+
+                        <p id="coldEmail">
+                            —
+                        </p>
+
+                    </div>
+
+
+                    <div class="outreach-card">
+
+                        <h3>
+                            Call Opener
+                        </h3>
+
+                        <p id="callOpener">
+                            —
+                        </p>
+
+                    </div>
+
+
+                    <div class="outreach-card">
+
+                        <h3>
+                            Discovery Question
+                        </h3>
+
+                        <p id="discoveryQuestion">
+                            —
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- EVIDENCE -->
+            <section
+                id="evidencePanel"
+                class="panel evidence-panel hidden"
+            >
+
+                <div class="panel-header">
+
+                    <div>
+
+                        <span class="eyebrow">
+                            EVIDENCE
+                        </span>
+
+                        <h2>
+                            Research evidence
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div id="evidenceContent">
+                    —
+                </div>
+
+            </section>
+
+
+        </main>
+
+    </div>
+
+
+    <script src="js/dashboard.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,44 @@
+python -c "from pathlib import Path; Path('.gitignore').write_text('''# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local application state
+data/
+output/
+
+# Local research / scraped artifacts
+*_careers.html
+*_careers.html
+
+# IDE / editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# SQLite / local databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Local backup files
+*.before_*
+''', encoding='utf-8')"
