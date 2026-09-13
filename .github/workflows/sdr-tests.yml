@@ -1,0 +1,30 @@
+name: SDR Safety Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  sdr-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pytest fastapi pydantic
+
+      - name: Run SDR safety tests
+        run: >-
+          python -m pytest -q
+          tests/test_sdr_mail_provider.py
+          tests/test_sdr_runtime.py
+          tests/test_outlook_graph_mailbox.py
