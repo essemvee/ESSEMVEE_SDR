@@ -1,22 +1,20 @@
 """Microsoft Graph mailbox adapter for the ESSEMVEE SDR.
 
-This module contains the real-provider boundary for Outlook/Microsoft 365.
-It does not contain credentials. A caller supplies an OAuth access token
-through a token provider and explicitly supplies the mailbox address.
+This module is the real-provider boundary for Outlook/Microsoft 365. The SDR
+orchestrator owns TEST/PRODUCTION recipient isolation; this adapter only sends
+or reads the recipient it is explicitly given.
 
-The adapter supports:
-- sending new messages from a specific mailbox;
-- replying to an existing Outlook message/thread;
-- listing recent inbox messages for a mailbox;
-- returning provider message identifiers needed by the SDR state engine.
-
-TEST safety is handled outside this adapter by SDROrchestrator. This adapter
-never silently redirects production mail and never invents credentials.
+The adapter uses the same provider contract consumed by SDROrchestrator:
+``send(to=..., subject=..., body=..., thread_id=...)`` returning the
+orchestrator SendResult. Messages are created as drafts before sending so the
+actual Microsoft Graph message ID and conversation ID can be persisted even
+though Graph's send operation itself returns 202 with no response body.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import json
 import os
 from typing import Callable, Mapping
@@ -24,11 +22,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
-from app.services.sdr_mailbox import (
-    MailboxConfigurationError,
-    MailboxProvider,
-    OutboundEmail,
-)
+from app.services.sdr_mailbox import MailboxConfigurationError
 
 
 GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0"
@@ -50,16 +44,11 @@ class GraphMailboxError(RuntimeError):
     """Raised when Microsoft Graph rejects or cannot complete an operation."""
 
 
-class OutlookGraphMailbox(MailboxProvider):
-    """Microsoft Graph implementation of the SDR mailbox contract.
-
-    The access token is supplied either explicitly or through the
-    ``MICROSOFT_GRAPH_ACCESS_TOKEN`` environment variable. The mailbox must
-    be supplied explicitly; ``info@essemvee.com`` is the intended production
-    mailbox for this project but is not silently assumed by the adapter.
-    """
+class OutlookGraphMailbox:
+    """Microsoft Graph implementation of the SDR MailProvider contract."""
 
     mode = "production"
+    provider_name = "outlook_graph"
 
     def __init__(
         self,
@@ -131,53 +120,77 @@ class OutlookGraphMailbox(MailboxProvider):
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise GraphMailboxError("Microsoft Graph returned invalid JSON") from exc
 
-    def send(self, email: OutboundEmail):
-        """Send a new message from the configured mailbox."""
-        if not email.to or "@" not in email.to:
-            raise MailboxConfigurationError("A valid outbound recipient is required")
-        if not email.intended_recipient:
-            raise MailboxConfigurationError("The intended recipient must be preserved")
+    def send(
+        self,
+        *,
+        to: str,
+        subject: str,
+        body: str,
+        thread_id: str | None = None,
+    ):
+        """Send a new message or a reply using the SDR MailProvider contract.
 
-        payload = {
-            "message": {
-                "subject": email.subject,
-                "body": {"contentType": "Text", "content": email.body},
-                "toRecipients": [{"emailAddress": {"address": email.to}}],
-            },
-            "saveToSentItems": True,
-        }
+        TEST-mode recipient redirection is deliberately not implemented here;
+        SDROrchestrator must pass the already-isolated actual recipient.
+        """
+        if not to or "@" not in to:
+            raise MailboxConfigurationError("A valid outbound recipient is required")
+        if not subject.strip():
+            raise MailboxConfigurationError("Email subject cannot be empty")
+        if not body.strip():
+            raise MailboxConfigurationError("Email body cannot be empty")
+
+        if thread_id:
+            _, draft, _ = self._request(
+                "POST",
+                f"users/{quote(self.mailbox, safe='')}/messages/{quote(thread_id, safe='')}/createReply",
+                payload={"comment": body},
+                expected_status=(201,),
+            )
+        else:
+            _, draft, _ = self._request(
+                "POST",
+                f"users/{quote(self.mailbox, safe='')}/messages",
+                payload={
+                    "subject": subject,
+                    "body": {"contentType": "Text", "content": body},
+                    "toRecipients": [{"emailAddress": {"address": to}}],
+                },
+                expected_status=(201,),
+            )
+
+        draft = draft or {}
+        message_id = str(draft.get("id", ""))
+        if not message_id:
+            raise GraphMailboxError("Microsoft Graph did not return a draft message ID")
+
+        conversation_id = draft.get("conversationId") or thread_id
         self._request(
             "POST",
-            f"users/{quote(self.mailbox, safe='')}/sendMail",
-            payload=payload,
+            f"users/{quote(self.mailbox, safe='')}/messages/{quote(message_id, safe='')}/send",
             expected_status=(202,),
         )
 
-        # Graph sendMail normally returns 202 with no message ID. The caller
-        # therefore records a deterministic local send token and should use
-        # inbox polling to correlate the provider message when required.
-        import uuid
+        from app.services.sdr_orchestrator import SendResult
 
-        return _send_result(
-            message_id=f"graph-send-{uuid.uuid4().hex}",
-            thread_id=None,
-            delivered_to=email.to,
-            intended_recipient=email.intended_recipient,
-            mode=self.mode,
+        return SendResult(
+            message_id=message_id,
+            thread_id=conversation_id,
+            sent_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            provider=self.provider_name,
         )
 
     def reply(self, message_id: str, text_content: str):
-        """Reply to an existing message using Microsoft Graph."""
+        """Compatibility helper for direct Outlook replies."""
         if not message_id:
             raise MailboxConfigurationError("An Outlook message ID is required")
         if not text_content.strip():
             raise MailboxConfigurationError("Reply text cannot be empty")
-
-        self._request(
-            "POST",
-            f"users/{quote(self.mailbox, safe='')}/messages/{quote(message_id, safe='')}/reply",
-            payload={"comment": text_content},
-            expected_status=(202,),
+        return self.send(
+            to=self.mailbox,
+            subject="Re:",
+            body=text_content,
+            thread_id=message_id,
         )
 
     def list_inbox_messages(self, *, top: int = 25) -> list[GraphMessage]:
@@ -220,20 +233,6 @@ def _map_message(item: dict) -> GraphMessage:
         sender=sender,
         received_at=item.get("receivedDateTime"),
         body_text=body_text,
-    )
-
-
-def _send_result(*, message_id: str, thread_id: str | None, delivered_to: str,
-                 intended_recipient: str, mode: str):
-    """Create the project's SendResult without duplicating mailbox models."""
-    from app.services.sdr_mailbox import SendResult
-
-    return SendResult(
-        message_id=message_id,
-        thread_id=thread_id or "",
-        delivered_to=delivered_to,
-        intended_recipient=intended_recipient,
-        mode=mode,
     )
 
 
