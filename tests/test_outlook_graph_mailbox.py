@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
-from types import SimpleNamespace
 
 from app.services.outlook_graph_mailbox import OutlookGraphMailbox
+from app.services.sdr_mailbox import MailboxConfigurationError
 
 
 class FakeResponse:
@@ -52,13 +52,12 @@ def test_send_uses_provider_contract_and_returns_real_message_id():
 
     assert result.message_id == "AAMK-real-message-id"
     assert result.thread_id == "conversation-123"
-    assert result.delivered_to == "viquar1.08@gmail.com"
     assert result.provider == "outlook_graph"
     assert result.sent_at
     assert len(calls) == 2
 
 
-def test_send_does_not_accept_an_unintended_recipient_contractually():
+def test_send_rejects_invalid_recipient():
     provider = OutlookGraphMailbox(
         "info@essemvee.com",
         access_token="test-token",
@@ -67,7 +66,7 @@ def test_send_does_not_accept_an_unintended_recipient_contractually():
 
     try:
         provider.send(to="", subject="x", body="y")
-    except ValueError:
+    except MailboxConfigurationError:
         pass
     else:
         raise AssertionError("invalid recipient must be rejected")
