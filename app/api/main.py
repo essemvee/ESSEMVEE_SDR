@@ -8,6 +8,10 @@ from app.services.prospect_discovery import (
     ProspectDiscovery,
 )
 
+from app.services.sdr_runtime import (
+    build_sdr_runtime,
+)
+
 from app.api.prospects import (
     router as prospects_router,
 )
@@ -130,6 +134,28 @@ def health():
         "application": "ESSEMVEE AI SDR",
         "version": "0.3.0",
     }
+
+
+@app.get("/api/sdr/runtime")
+def sdr_runtime_status():
+    """Validate runtime wiring without sending or drafting mail."""
+    runtime = None
+    try:
+        runtime = build_sdr_runtime()
+        provider = runtime.provider
+        return {
+            "success": True,
+            "mode": runtime.orchestrator.mode,
+            "provider": getattr(provider, "provider_name", provider.__class__.__name__),
+            "test_recipient": runtime.orchestrator.test_recipient,
+            "mailbox": getattr(provider, "mailbox", None),
+            "send_performed": False,
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    finally:
+        if runtime is not None:
+            runtime.state.close()
 
 
 # ============================================================
